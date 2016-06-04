@@ -43,17 +43,12 @@ func serve(dir, addr, auth string) error {
 		}
 		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			u, p, ok := r.BasicAuth()
-			if !ok {
-				goto authRequired
-			}
-			if u != fields[0] || p != fields[1] {
-				goto authRequired
+			if !ok || u != fields[0] || p != fields[1] {
+				w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
+				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+				return
 			}
 			webdavHandler.ServeHTTP(w, r)
-			return
-		authRequired:
-			w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		})
 	}
 	return http.ListenAndServe(addr, handler)
