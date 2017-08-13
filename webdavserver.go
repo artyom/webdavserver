@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"golang.org/x/net/webdav"
 
@@ -51,5 +52,10 @@ func serve(dir, addr, auth string) error {
 			webdavHandler.ServeHTTP(w, r)
 		})
 	}
-	return http.ListenAndServe(addr, handler)
+	return (&http.Server{
+		Addr:              addr,
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       30 * time.Second,
+	}).ListenAndServe()
 }
