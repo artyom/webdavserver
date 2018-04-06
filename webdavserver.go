@@ -3,16 +3,14 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
-	"golang.org/x/net/webdav"
-
 	"github.com/artyom/autoflags"
+	"golang.org/x/net/webdav"
 )
 
 func main() {
@@ -25,8 +23,7 @@ func main() {
 		Addr: "127.0.0.1:8080",
 		Auth: os.Getenv("WEBDAV_AUTH"),
 	}
-	autoflags.Define(&p)
-	flag.Parse()
+	autoflags.Parse(&p)
 	log.Fatal(serve(p.Dir, p.Addr, p.Auth))
 }
 
