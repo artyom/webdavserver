@@ -2,6 +2,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"crypto/subtle"
 	"errors"
 	"log"
 	"net/http"
@@ -39,9 +41,11 @@ func serve(dir, addr, auth string) error {
 		if len(fields) != 2 {
 			return errors.New("invalid auth format (want user:password)")
 		}
+		want := sha256.Sum256([]byte(auth))
 		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			u, p, ok := r.BasicAuth()
-			if !ok || u != fields[0] || p != fields[1] {
+			got := sha256.Sum256([]byte(u + ":" + p))
+			if !ok || subtle.ConstantTimeCompare(want[:], got[:]) == 0 {
 				w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
