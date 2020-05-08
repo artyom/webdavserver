@@ -17,19 +17,23 @@ import (
 
 func main() {
 	p := struct {
-		Dir  string `flag:"dir,directory to serve"`
-		Addr string `flag:"addr,address to listen"`
-		Auth string `flag:"auth,basic auth credentials in user:password format (or set WEBDAV_AUTH env)"`
+		Dir    string `flag:"dir,directory to serve"`
+		Addr   string `flag:"addr,address to listen"`
+		Auth   string `flag:"auth,basic auth credentials in user:password format (or set WEBDAV_AUTH env)"`
+		TLSKey string `flag:"key,TLS private key for secure connection"`
+		TLSCrt string `flag:"crt,TLS public key for secure conneciton"`
 	}{
-		Dir:  ".",
-		Addr: "127.0.0.1:8080",
-		Auth: os.Getenv("WEBDAV_AUTH"),
+		Dir:    ".",
+		Addr:   "127.0.0.1:8080",
+		Auth:   os.Getenv("WEBDAV_AUTH"),
+		TLSKey: "",
+		TLSCrt: "",
 	}
 	autoflags.Parse(&p)
-	log.Fatal(serve(p.Dir, p.Addr, p.Auth))
+	log.Fatal(serve(p.Dir, p.Addr, p.Auth, p.TLSCrt, p.TLSKey))
 }
 
-func serve(dir, addr, auth string) error {
+func serve(dir, addr, auth, tlscrt, tlskey string) error {
 	var handler http.Handler
 	webdavHandler := &webdav.Handler{
 		FileSystem: webdav.Dir(dir),
@@ -53,10 +57,15 @@ func serve(dir, addr, auth string) error {
 			webdavHandler.ServeHTTP(w, r)
 		})
 	}
-	return (&http.Server{
+	server := &http.Server{
 		Addr:              addr,
 		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       30 * time.Second,
-	}).ListenAndServe()
+	}
+	if tlscrt != "" && tlskey != "" {
+		return server.ListenAndServeTLS(tlscrt, tlskey)
+	} else {
+		return server.ListenAndServe()
+	}
 }
